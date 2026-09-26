@@ -307,16 +307,28 @@
   // ---- Now Playing colour ----
 
   let themeFor = null;
+  // Now Playing takes its colour from the episode's artwork, a podcast page from the show's.
+  function themeArt() {
+    if (state.view === 'now') {
+      const ep = player.ep();
+      return ep ? artFor(ep) : null;
+    }
+    if (state.view === 'show') {
+      const s = showById.get(state.showId);
+      return s && s.art ? lib.art(s.art) : null;
+    }
+    return null;
+  }
+
   function applyTheme() {
     const root = document.documentElement.style;
     const clear = () => theme.KEYS.forEach(k => root.removeProperty(k));
-    const ep = player.ep();
-    if (state.view !== 'now' || !ep) { themeFor = null; clear(); return; }
-    const url = artFor(ep);
+    const url = themeArt();
+    if (!url) { themeFor = null; clear(); return; }
     if (themeFor === url) return;
     themeFor = url;
     theme.hueForImage(url).then(hue => {
-      if (themeFor !== url || state.view !== 'now') return;
+      if (themeFor !== url) return;
       if (hue == null) { clear(); return; }
       const palette = theme.paletteFor(hue);
       theme.KEYS.forEach(k => root.setProperty(k, palette[k]));
@@ -417,9 +429,9 @@
     const st = status(ep);
     const cur = ep.id === lib.current;
     const length = st === 'started' ? leftLabel(ep) : fmtDur(durOf(ep));
-    return `<li><button class="row${st === 'done' && !cur ? ' is-done' : ''}" data-nav data-key="ep:${esc(ep.id)}" data-action="play" data-id="${esc(ep.id)}" aria-label="${esc(joinMeta(ep.title, fmtDay(ep.date), length))}">
-      <span class="row-flag">${badgeFor(ep, 'flag')}</span>
-      <span class="row-main"><span class="row-title">${esc(ep.title)}</span>${progressBar(ep)}</span>
+    return `<li><button class="row row-ep${st === 'done' && !cur ? ' is-done' : ''}" data-nav data-key="ep:${esc(ep.id)}" data-action="play" data-id="${esc(ep.id)}" aria-label="${esc(joinMeta(ep.title, fmtDay(ep.date), length))}">
+      <img class="art row-art" src="${esc(artFor(ep))}" alt="" loading="lazy">
+      <span class="row-main">${badgeFor(ep, 'flag') ? `<span class="row-flag">${badgeFor(ep, 'flag')}</span>` : ''}<span class="row-title">${esc(ep.title)}</span>${progressBar(ep)}</span>
       <span class="row-meta"><span>${esc(fmtDay(ep.date))}</span><span>${esc(length)}</span></span>
     </button></li>`;
   }
@@ -708,6 +720,7 @@
       const el = document.querySelector(`[data-key="${CSS.escape(key)}"]`);
       if (el && isVisible(el)) return el;
     }
+    if (state.view === 'show') return main.querySelector('.row-ep') || main.querySelector('[data-nav]');
     return main.querySelector('[data-nav]') || $('.tab');
   }
 
