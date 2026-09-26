@@ -139,7 +139,20 @@
     .filter(([id, p]) => epById.has(id) && p.last && (p.done || p.pos >= 1 || id === lib.current))
     .sort((a, b) => b[1].last - a[1].last)
     .map(([id]) => epById.get(id));
-  const upNext = () => latestEpisodes().find(e => e.id !== lib.current && status(e) !== 'done');
+  // Episodes skipped with Page Up this session, so they don't come straight back as "up next".
+  const skipped = new Set();
+  const upNext = () => latestEpisodes().find(e => e.id !== lib.current && status(e) !== 'done' && !skipped.has(e.id));
+
+  // Page Up: move on to the next episode in autoplay order, keeping this one's place.
+  function playNext() {
+    if (!player.ep()) { osd('Nothing playing'); return; }
+    const next = upNext();
+    if (!next) { osd('Nothing up next'); return; }
+    skipped.add(lib.current);
+    player.load(next.id);
+    osd(`${FFWD} Next episode`);
+    render();
+  }
 
   // ---- Player ----
 
@@ -598,7 +611,7 @@
           </div>
           <div class="np-vol"><span class="np-label">Vol</span><span data-vol></span><span data-volpct></span></div>
           <p class="np-next"><span class="np-label">Up next</span> ${next ? `${esc(next.title)} <span class="dim">· ${esc(showById.get(next.showId)?.title)}</span>` : '<span class="dim">Nothing. You are all caught up.</span>'}</p>
-          <p class="np-keys"><kbd>←</kbd> ${SKIP_BACK}s &nbsp;<kbd>Shift</kbd>+<kbd>←</kbd> ${SKIP_FINE}s &nbsp;<kbd>→</kbd> ${SKIP_FWD}s &nbsp;<kbd>Shift</kbd>+<kbd>→</kbd> ${SKIP_FINE}s &nbsp;<kbd>↑</kbd><kbd>↓</kbd> volume</p>
+          <p class="np-keys"><kbd>←</kbd> ${SKIP_BACK}s &nbsp;<kbd>Shift</kbd>+<kbd>←</kbd> ${SKIP_FINE}s &nbsp;<kbd>→</kbd> ${SKIP_FWD}s &nbsp;<kbd>Shift</kbd>+<kbd>→</kbd> ${SKIP_FINE}s &nbsp;<kbd>↑</kbd><kbd>↓</kbd> volume &nbsp;<kbd>PgUp</kbd> next episode</p>
         </div>
       </div>`;
     },
@@ -951,11 +964,16 @@
 
     if (k === '?') { openKeys(); e.preventDefault(); return; }
     if (k === 'p' || k === 'P') { player.toggle(); e.preventDefault(); return; }
+    if (k === 'PageUp') { playNext(); e.preventDefault(); return; }
+    // Small skips work anywhere: Shift+arrows, or , and . (no Shift needed).
+    if (e.shiftKey && (k === 'ArrowLeft' || k === 'ArrowRight')) { skip(k === 'ArrowRight' ? SKIP_FINE : -SKIP_FINE); e.preventDefault(); return; }
+    if (k === ',' || k === '<') { skip(-SKIP_FINE); e.preventDefault(); return; }
+    if (k === '.' || k === '>') { skip(SKIP_FINE); e.preventDefault(); return; }
 
     if (state.view === 'now') {
       switch (k) {
-        case 'ArrowLeft': skip(e.shiftKey ? -SKIP_FINE : -SKIP_BACK); break;
-        case 'ArrowRight': skip(e.shiftKey ? SKIP_FINE : SKIP_FWD); break;
+        case 'ArrowLeft': skip(-SKIP_BACK); break;
+        case 'ArrowRight': skip(SKIP_FWD); break;
         case 'ArrowUp': setVolume(0.1); break;
         case 'ArrowDown': setVolume(-0.1); break;
         case ' ': player.toggle(); break;
