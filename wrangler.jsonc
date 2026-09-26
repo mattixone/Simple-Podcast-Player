@@ -1,0 +1,13 @@
+{
+  // Cloudflare settings for Couchcast. See DEPLOY.md for how to put it online.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "couchcast",
+  "main": "worker/index.js",
+  "compatibility_date": "2025-09-01",
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "durable_objects": {
+    "bindings": [{ "name": "STORE", "class_name": "Store" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Store"] }],
+  "observability": { "enabled": true }
+}

@@ -2,21 +2,24 @@
 
 A simple podcast player for the couch, controlled entirely from the keyboard. It uses the same green-phosphor CRT look as Couch Commander.
 
-This is a **clickable prototype**. It uses sample podcasts and a pretend playback clock, so it has no real audio yet. Open `index.html` in a browser to try it.
+- **To put it online:** see [DEPLOY.md](DEPLOY.md). It runs on Cloudflare's free plan, and you sign in with one password.
+- **Without a server** (the preview link, or opening `public/index.html` directly), it runs a demo with sample podcasts and pretend playback.
 
-## Design decisions so far
+## Design decisions
 
 | Area | Decision |
 |---|---|
-| Setup | 50" screen about 3 m away. Keyboard and mouse, but everything works from the keyboard alone. |
-| Look | Green-phosphor CRT: scanlines, glow, monospace type. Text grows with the screen size. |
-| Highlight | Whatever is selected lights up solid green (buttons) or glows and grows (artwork). The mouse moves the same highlight, and the pointer hides when you're not using it. |
-| Screens | **Latest** (grid of the last 14 days, played episodes stay but are dimmed), **Podcasts** (one tile per show, opening a full episode list), **Recent** (what you played, newest first), **Now Playing** (full screen). |
+| Setup | 50" screen about 3 m away. Keyboard and mouse, but everything works from the keyboard alone. Also works on iPhone (Add to Home Screen). |
+| Look | Green-phosphor CRT: scanlines, glow, monospace type. Text grows with the screen size. Artwork is always shown in full colour. |
+| Now Playing colour | The screen re-tints to the main colour of the episode's artwork. Brightness is adjusted per colour so text stays readable. Artwork with no real colour keeps the green. |
+| Highlight | Whatever is selected lights up solid (buttons) or glows and grows (artwork). The mouse moves the same highlight, and the pointer hides when you're not using it. |
+| Screens | **Latest** (last 14 days; played episodes stay, dimmed), **Podcasts** (one tile per show, opening its episode list), **Recent** (what you played), **Search** (find and subscribe), **Now Playing** (full screen). |
 | Tiles | A `NEW` label if not started, a progress bar and "min left" if started, and `✓ PLAYED` when finished. |
-| Now Playing | Big artwork, big play/pause button, one progress bar, volume, and one "Up next" line. Nothing else. |
-| Mini player | A strip along the bottom of the library screens shows what's playing. Press `N` to open it. |
-| Autoplay | When an episode ends, the next unplayed episode from Latest starts. |
-| Resume | Every episode remembers where you stopped. |
+| Now Playing | Big artwork, big play/pause button, one progress bar, volume, and one "Up next" line. |
+| Mini player | A strip along the bottom of the library screens. Press `N` to open Now Playing. |
+| Autoplay | When an episode ends, the newest episode you haven't finished starts. |
+| Resume and sync | Every episode remembers where you stopped, and that follows you between devices. |
+| Removing things | Unsubscribing needs a second press, so it can't happen by accident. |
 | Left out on purpose | Playback speed, sleep timer, show notes, downloads. |
 
 ## Keys
@@ -27,33 +30,36 @@ This is a **clickable prototype**. It uses sample podcasts and a pretend playbac
 | `Shift` + `←` / `→` | | back / forward 5s |
 | `Enter` / `Space` | Select | Play / pause |
 | `Esc` / `Backspace` | Back | Back to library |
-| `1` `2` `3` | Latest, Podcasts, Recent | |
+| `1` `2` `3` `4` | Latest, Podcasts, Recent, Search | |
+| `/` | Type a search | |
 | `N` | Open Now Playing | |
 | `P` | Play / pause | Play / pause |
 | Media keys | Play / pause, skip | Play / pause, skip |
-| `A` | Artwork in colour or phosphor green | |
 | `?` | Legend | Legend |
 
-## Plan for the real version
+In the search box, letters type as normal. `↓` moves to the results, and `Esc` clears the box, then goes back.
 
-The app is a web page that runs anywhere, including on an iPhone (Add to Home Screen). A small **cloud helper** is needed for two jobs a web page can't do on its own:
+## How it fits together
 
-1. **Fetch feeds.** Most podcast feeds block web pages on other sites from reading them. The helper fetches them on the app's behalf.
-2. **Sync progress.** It stores where you're up to, so the TV, laptop and phone all agree.
-
-A free Cloudflare Worker (or similar) covers both, so nothing has to run on your PC. The same helper later hosts ad detection.
-
-### Build steps
-
-1. Real audio: swap the pretend clock for an `<audio>` element, so media keys and the phone lock screen work.
-2. Subscriptions: import an OPML file from your current app, or paste a feed address.
-3. Cloud helper: fetch feeds and sync progress.
-4. Installable on phones, with an app icon and full screen.
-5. Later: ad skipping. First, a "skip to next chapter" key for feeds that publish chapters. After that, ad breaks marked on the progress bar, with a single key to skip them.
+- **The page** (`public/`) is plain HTML, CSS and JavaScript, with no build step. It plays audio straight from each podcast's own website.
+- **The server** (`worker/index.js`) is a Cloudflare Worker. Its jobs:
+  - It checks your password.
+  - It searches Apple's podcast directory.
+  - It fetches feeds, because most block web pages from reading them directly.
+  - It passes artwork through, so its colours can be read.
+  - It stores your subscriptions and progress in a Durable Object.
 
 ## Files
 
-- `index.html`: the page shell and the legend
-- `css/app.css`: the CRT theme and layouts
-- `js/data.js`: sample podcasts and generated placeholder artwork
-- `js/app.js`: views, keyboard navigation and the prototype player
+- `public/index.html`: the page shell and the legend
+- `public/css/app.css`: the CRT theme and layouts
+- `public/js/theme.js`: finds the artwork's main colour and builds the Now Playing colours
+- `public/js/library.js`: sign-in, search, feeds, subscriptions and progress sync
+- `public/js/demo.js`: sample podcasts, generated artwork and pretend audio for demo mode
+- `public/js/app.js`: screens, keyboard navigation and the player
+- `worker/index.js`: the Cloudflare server
+- `wrangler.jsonc`: Cloudflare settings
+
+## Still to come
+
+- Ad skipping. First, a "skip to next chapter" key for feeds that publish chapters. After that, ad breaks marked on the progress bar, with a single key to skip them.

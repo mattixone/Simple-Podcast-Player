@@ -1,0 +1,12 @@
+{
+  "name": "couchcast",
+  "private": true,
+  "description": "A keyboard-first podcast player for the couch.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.41.0"
+  }
+}

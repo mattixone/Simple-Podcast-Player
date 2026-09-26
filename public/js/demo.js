@@ -1,7 +1,7 @@
 /*
- * Sample library for the prototype.
- * Everything here is made up. The real build replaces it with your subscribed feeds.
- * Release dates are relative to "now", so the Latest grid always has fresh episodes.
+ * Demo mode: a made-up library and a pretend audio player.
+ * Used when the page runs without its server (for example the preview link),
+ * so the design can still be tried. Release dates are relative to "now".
  */
 (function () {
   'use strict';
@@ -276,7 +276,10 @@
     const lh = size * 1.12;
     let y = S * 0.93 - (lines.length - 1) * lh;
     for (const l of lines) { g.fillText(l, S * 0.08, y); y += lh; }
-    return cv.toDataURL('image/jpeg', 0.86);
+    const url = cv.toDataURL('image/jpeg', 0.86);
+    // Read the colour from the canvas we just drew, so no image has to be read back later.
+    try { window.Couchcast.theme.remember(url, window.Couchcast.theme.hueFromSource(cv)); } catch { /* keep green */ }
+    return url;
   }
 
   // ---- Build the library ------------------------------------------------
@@ -285,12 +288,15 @@
   const episodes = [];
   for (const s of shows) {
     s.episodes.forEach(([days, mins, title], i) => {
+      const id = `${s.id}-${i}`;
       episodes.push({
-        id: `${s.id}-${i}`,
+        id,
         showId: s.id,
         title,
         date: now - days * DAY,
         duration: mins * 60 + ((i * 37 + s.id.length * 11) % 60),
+        url: 'demo:' + id,
+        art: '',
       });
     });
     delete s.episodes;
@@ -315,5 +321,55 @@
     ]);
   }
 
-  window.PODCAST_DATA = { shows, episodes, sampleProgress };
+  // ---- Pretend audio: the same events and properties as an <audio> element ----
+
+  const durations = new Map(episodes.map(e => [e.url, e.duration]));
+
+  class FakeAudio extends EventTarget {
+    constructor() {
+      super();
+      this._src = '';
+      this._timer = 0;
+      this._last = 0;
+      this.currentTime = 0;
+      this.duration = NaN;
+      this.paused = true;
+      this.volume = 1;
+      this.preload = 'metadata';
+    }
+    get src() { return this._src; }
+    set src(value) {
+      this.pause();
+      this._src = value;
+      this.currentTime = 0;
+      this.duration = durations.get(value) || NaN;
+      setTimeout(() => this.dispatchEvent(new Event('loadedmetadata')), 0);
+    }
+    play() {
+      if (!this._src) return Promise.reject(new Error('No episode'));
+      if (!this.paused) return Promise.resolve();
+      this.paused = false;
+      this._last = performance.now();
+      this._timer = setInterval(() => {
+        const t = performance.now();
+        this.currentTime = Math.min(this.duration, this.currentTime + (t - this._last) / 1000);
+        this._last = t;
+        this.dispatchEvent(new Event('timeupdate'));
+        if (this.currentTime >= this.duration) {
+          this.pause();
+          this.dispatchEvent(new Event('ended'));
+        }
+      }, 250);
+      this.dispatchEvent(new Event('play'));
+      return Promise.resolve();
+    }
+    pause() {
+      if (this.paused) return;
+      this.paused = true;
+      clearInterval(this._timer);
+      this.dispatchEvent(new Event('pause'));
+    }
+  }
+
+  window.Couchcast.demo = { shows, episodes, sampleProgress, FakeAudio, startCurrent: 'kitchen-0' };
 })();

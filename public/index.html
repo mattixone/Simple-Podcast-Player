@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#020803">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Couchcast">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>Couchcast</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,9 +25,9 @@
       <button class="btn tab" data-nav data-key="tab-latest" data-action="tab" data-tab="latest"><kbd>1</kbd> Latest</button>
       <button class="btn tab" data-nav data-key="tab-podcasts" data-action="tab" data-tab="podcasts"><kbd>2</kbd> Podcasts</button>
       <button class="btn tab" data-nav data-key="tab-recent" data-action="tab" data-tab="recent"><kbd>3</kbd> Recent</button>
+      <button class="btn tab" data-nav data-key="tab-search" data-action="tab" data-tab="search"><kbd>4</kbd> Search</button>
     </nav>
     <div class="top-tools">
-      <button class="btn btn-sm" id="art-btn" data-nav data-key="art" data-action="art">Art: Colour</button>
       <button class="btn btn-sm" data-nav data-key="keys" data-action="keys"><kbd>?</kbd> Legend</button>
     </div>
   </header>
@@ -40,7 +48,8 @@
           <dt><kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&rarr;</kbd><kbd>&darr;</kbd></dt><dd>Move the highlight</dd>
           <dt><kbd>Enter</kbd> <kbd>Space</kbd></dt><dd>Select</dd>
           <dt><kbd>Esc</kbd> <kbd>Bksp</kbd></dt><dd>Back</dd>
-          <dt><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></dt><dd>Latest, Podcasts, Recent</dd>
+          <dt><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd></dt><dd>Latest, Podcasts, Recent, Search</dd>
+          <dt><kbd>/</kbd></dt><dd>Type a search</dd>
           <dt><kbd>N</kbd></dt><dd>Open Now Playing</dd>
         </dl>
       </section>
@@ -61,7 +70,6 @@
         <dl>
           <dt><kbd>P</kbd></dt><dd>Play / pause</dd>
           <dt>Media keys</dt><dd>Play / pause and skip</dd>
-          <dt><kbd>A</kbd></dt><dd>Artwork in colour or phosphor green</dd>
           <dt><kbd>?</kbd></dt><dd>Show this legend</dd>
         </dl>
       </section>
@@ -70,7 +78,9 @@
   </div>
 </div>
 
-<script src="js/data.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/demo.js"></script>
+<script src="js/library.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
