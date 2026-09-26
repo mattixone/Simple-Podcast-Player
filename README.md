@@ -28,7 +28,7 @@ A simple podcast player for the couch, controlled entirely from the keyboard. It
 | Key | Library | Now Playing |
 |---|---|---|
 | Arrow keys | Move the highlight | `←` back 15s, `→` forward 30s, `↑` `↓` volume |
-| `Shift` + `←` / `→` | | back / forward 5s |
+| `Shift` + `←` / `→` | back / forward 5s | back / forward 5s |
 | `Space` | Open or play (`Enter` works too) | Play / pause |
 | `Esc` / `Backspace` | Back | Back to library |
 | `1` `2` `3` `4` | Latest, Podcasts, Recent, Search | |
@@ -36,6 +36,8 @@ A simple podcast player for the couch, controlled entirely from the keyboard. It
 | `/` | Type a search | |
 | `N` | Open Now Playing | |
 | `P` | Play / pause | Play / pause |
+| `,` `.` | back / forward 5s | back / forward 5s |
+| `Page Up` | Next episode | Next episode |
 | Media keys | Play / pause, skip | Play / pause, skip |
 | `?` | Legend | Legend |
 
