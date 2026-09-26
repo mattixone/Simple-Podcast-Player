@@ -45,7 +45,6 @@
     current: store.get('current', savedProgress ? null : 'kitchen-0'),
     playing: false,
     volume: store.get('volume', 0.7),
-    art: store.get('art', 'colour'),
     memory: {},
     keysOpen: false,
     keysReturn: null,
@@ -232,6 +231,95 @@
     } catch { /* unsupported */ }
   }
 
+  // ---- Now Playing colour: tint the phosphor to the artwork's main colour ----
+
+  const THEME_KEYS = ['--ph', '--ph-2', '--dim', '--faint', '--bg', '--bg-lift', '--panel', '--ink'];
+
+  function hslToRgb(h, s, l) {
+    const k = n => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+    return [f(0), f(8), f(4)];
+  }
+  const luminance = rgb => rgb
+    .map(c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+    .reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
+  const toHex = rgb => '#' + rgb.map(c => Math.round(c * 255).toString(16).padStart(2, '0')).join('');
+
+  // The colour of hue h and saturation s that is just bright enough to reach the target luminance.
+  // Fixing brightness by luminance keeps text readable whatever the hue (blue needs a paler tint than green).
+  function shade(h, s, target) {
+    let lo = 0, hi = 1;
+    for (let i = 0; i < 18; i++) {
+      const mid = (lo + hi) / 2;
+      if (luminance(hslToRgb(h, s, mid)) < target) lo = mid; else hi = mid;
+    }
+    return toHex(hslToRgb(h, s, hi));
+  }
+
+  function paletteFor(h) {
+    return {
+      '--ph': shade(h, 1, 0.45),      // about 9:1 on the background
+      '--ph-2': shade(h, 0.85, 0.28),
+      '--dim': shade(h, 0.7, 0.2),    // stays above 4.5:1
+      '--faint': shade(h, 0.6, 0.022),
+      '--bg': shade(h, 0.5, 0.0025),
+      '--bg-lift': shade(h, 0.55, 0.007),
+      '--panel': shade(h, 0.55, 0.005),
+      '--ink': shade(h, 0.5, 0.001),
+    };
+  }
+
+  // The most common clearly coloured hue in the artwork. Near-black, near-white and grey
+  // pixels are ignored, so a mostly black cover still picks up its accent colour.
+  function mainHue(img) {
+    const S = 40;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = S;
+    const g = cv.getContext('2d', { willReadFrequently: true });
+    g.drawImage(img, 0, 0, S, S);
+    let data;
+    try { data = g.getImageData(0, 0, S, S).data; } catch { return null; }
+    const bins = new Float64Array(36), xs = new Float64Array(36), ys = new Float64Array(36);
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i] / 255, gr = data[i + 1] / 255, b = data[i + 2] / 255;
+      const max = Math.max(r, gr, b), min = Math.min(r, gr, b), d = max - min;
+      const l = (max + min) / 2;
+      if (d < 0.08 || l < 0.15 || l > 0.94) continue;
+      const sat = d / (1 - Math.abs(2 * l - 1));
+      if (sat < 0.25) continue;
+      let h = max === r ? ((gr - b) / d) % 6 : max === gr ? (b - r) / d + 2 : (r - gr) / d + 4;
+      h = (h * 60 + 360) % 360;
+      const bin = Math.floor(h / 10) % 36, w = 0.5 + sat;
+      bins[bin] += w;
+      xs[bin] += Math.cos(h * Math.PI / 180) * w;
+      ys[bin] += Math.sin(h * Math.PI / 180) * w;
+    }
+    let best = 0;
+    for (let i = 1; i < 36; i++) if (bins[i] > bins[best]) best = i;
+    if (bins[best] < S * S * 0.02) return null; // no real colour: keep the green
+    return (Math.atan2(ys[best], xs[best]) * 180 / Math.PI + 360) % 360;
+  }
+
+  function applyTheme() {
+    const ep = player.ep();
+    const pal = state.view === 'now' && ep ? showById.get(ep.showId).theme : null;
+    const root = document.documentElement.style;
+    for (const k of THEME_KEYS) {
+      if (pal) root.setProperty(k, pal[k]); else root.removeProperty(k);
+    }
+  }
+
+  for (const s of shows) {
+    const img = new Image();
+    img.onload = () => {
+      const h = mainHue(img);
+      s.theme = h == null ? null : paletteFor(h);
+      if (state.view === 'now') applyTheme();
+    };
+    img.src = s.art;
+  }
+
   // ---- On-screen display ----
 
   let osdTimer = 0;
@@ -391,12 +479,12 @@
     const top = main.scrollTop;
 
     document.body.dataset.view = state.view;
-    document.body.classList.toggle('art-phosphor', state.art === 'phosphor');
     main.innerHTML = VIEWS[state.view]();
     main.dataset.view = key;
     main.scrollTop = sameView ? top : 0;
 
     renderChrome();
+    applyTheme();
     updatePlayUI();
     updateTimeUI();
     updateVolUI();
@@ -407,7 +495,6 @@
   function renderChrome() {
     const tabView = state.view === 'show' ? 'podcasts' : state.view;
     $$('.tab').forEach(t => t.setAttribute('aria-current', t.dataset.tab === tabView ? 'page' : 'false'));
-    $('#art-btn').textContent = `Art: ${state.art === 'phosphor' ? 'Phosphor' : 'Colour'}`;
     statusEl.innerHTML = `<span><span class="led" aria-hidden="true"></span> ${shows.length} subscriptions</span>
       <span>${latestEpisodes().filter(e => status(e) === 'new').length} new this fortnight</span>
       <span class="dim">Sample data</span>`;
@@ -549,18 +636,9 @@
       case 'toggle': player.toggle(); break;
       case 'back15': skip(-SKIP_BACK); break;
       case 'fwd30': skip(SKIP_FWD); break;
-      case 'art': toggleArt(); break;
       case 'keys': openKeys(); break;
       case 'keys-close': closeKeys(); break;
     }
-  }
-
-  function toggleArt() {
-    state.art = state.art === 'phosphor' ? 'colour' : 'phosphor';
-    store.set('art', state.art);
-    document.body.classList.toggle('art-phosphor', state.art === 'phosphor');
-    $('#art-btn').textContent = `Art: ${state.art === 'phosphor' ? 'Phosphor' : 'Colour'}`;
-    osd(`Art · ${state.art === 'phosphor' ? 'Phosphor' : 'Colour'}`);
   }
 
   function openKeys() {
@@ -598,7 +676,6 @@
     }
 
     if (k === '?') { openKeys(); e.preventDefault(); return; }
-    if (k === 'a' || k === 'A') { toggleArt(); e.preventDefault(); return; }
     if (k === 'p' || k === 'P') { player.toggle(); e.preventDefault(); return; }
 
     if (state.view === 'now') {
