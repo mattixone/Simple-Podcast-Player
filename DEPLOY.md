@@ -2,7 +2,9 @@
 
 This takes about 10 minutes, once. It's free: Couchcast fits comfortably inside Cloudflare's free plan.
 
-At the end you'll have your own address, like `https://couchcast.your-name.workers.dev`. It works on the couch PC, your laptop and your iPhone, and your progress follows you between them.
+At the end you'll have your own address, like `https://simple-podcast-player.your-name.workers.dev`. It works on the couch PC, your laptop and your iPhone, and your progress follows you between them.
+
+**Your address:** https://simple-podcast-player.mattixone.workers.dev
 
 ## Before you start
 
@@ -13,8 +15,8 @@ At the end you'll have your own address, like `https://couchcast.your-name.worke
 
 1. In the Cloudflare dashboard, go to **Workers & Pages** and choose **Create**.
 2. Choose **Import a repository**. Connect your GitHub account when asked, then pick **simple-podcast-player**.
-3. Keep the project name **couchcast**. Leave the build command empty and the deploy command as `npx wrangler deploy`. Choose **Deploy**.
-4. When it finishes, open the new **couchcast** Worker and go to **Settings → Variables and Secrets**. Add a variable:
+3. Keep the project name **simple-podcast-player**. It's the first part of your address, and it must match the `name` in `wrangler.jsonc`. Leave the build command empty and the deploy command as `npx wrangler deploy`. Choose **Deploy**.
+4. When it finishes, open the new **simple-podcast-player** Worker and go to **Settings → Variables and Secrets**. Add a variable:
    - Type: **Secret**
    - Name: `APP_PASSWORD`
    - Value: the password you want to use
