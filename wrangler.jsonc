@@ -1,7 +1,7 @@
 {
   // Cloudflare settings for Couchcast. See DEPLOY.md for how to put it online.
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "couchcast",
+  "name": "simple-podcast-player", // must match the Worker's name in Cloudflare
   "main": "worker/index.js",
   "compatibility_date": "2025-09-01",
   "assets": { "directory": "./public", "binding": "ASSETS" },
