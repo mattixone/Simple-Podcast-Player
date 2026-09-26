@@ -27,6 +27,22 @@
     epById = new Map(lib.episodes.map(e => [e.id, e]));
   }
 
+  // Settings are kept per device, so the TV and the phone can differ.
+  const SETTINGS = {
+    rowArt: { label: 'Episode artwork in lists', about: 'A small picture beside each episode on a podcast\u2019s page.', on: true },
+    mini: { label: 'Now-playing strip', about: 'The bar along the bottom of the library. When it\u2019s off, N still opens the player.', on: true },
+  };
+  const settings = (() => {
+    const out = {};
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem('couchcast:settings')) || {}; } catch { /* use defaults */ }
+    for (const k in SETTINGS) out[k] = typeof saved[k] === 'boolean' ? saved[k] : SETTINGS[k].on;
+    return out;
+  })();
+  function saveSettings() {
+    try { localStorage.setItem('couchcast:settings', JSON.stringify(settings)); } catch { /* storage unavailable */ }
+  }
+
   const savedVolume = (() => { try { return JSON.parse(localStorage.getItem('couchcast:volume')); } catch { return null; } })();
 
   const state = {
@@ -429,8 +445,8 @@
     const st = status(ep);
     const cur = ep.id === lib.current;
     const length = st === 'started' ? leftLabel(ep) : fmtDur(durOf(ep));
-    return `<li><button class="row row-ep${st === 'done' && !cur ? ' is-done' : ''}" data-nav data-key="ep:${esc(ep.id)}" data-action="play" data-id="${esc(ep.id)}" aria-label="${esc(joinMeta(ep.title, fmtDay(ep.date), length))}">
-      <img class="art row-art" src="${esc(artFor(ep))}" alt="" loading="lazy">
+    return `<li><button class="row row-ep${settings.rowArt ? '' : ' row-ep-plain'}${st === 'done' && !cur ? ' is-done' : ''}" data-nav data-key="ep:${esc(ep.id)}" data-action="play" data-id="${esc(ep.id)}" aria-label="${esc(joinMeta(ep.title, fmtDay(ep.date), length))}">
+      ${settings.rowArt ? `<img class="art row-art" src="${esc(artFor(ep))}" alt="" loading="lazy">` : ''}
       <span class="row-main">${badgeFor(ep, 'flag') ? `<span class="row-flag">${badgeFor(ep, 'flag')}</span>` : ''}<span class="row-title">${esc(ep.title)}</span>${progressBar(ep)}</span>
       <span class="row-meta"><span>${esc(fmtDay(ep.date))}</span><span>${esc(length)}</span></span>
     </button></li>`;
@@ -531,6 +547,21 @@
       </section>`;
     },
 
+    settings() {
+      const rows = Object.entries(SETTINGS).map(([key, def]) => {
+        const on = settings[key];
+        return `<li><button class="row row-setting" data-nav data-key="set:${key}" data-action="setting" data-setting="${key}" role="switch" aria-checked="${on}">
+          <span class="row-main"><span class="row-title">${esc(def.label)}</span><span class="row-about">${esc(def.about)}</span></span>
+          <span class="switch${on ? ' is-on' : ''}">${on ? 'On' : 'Off'}</span>
+        </button></li>`;
+      }).join('');
+      return `<section aria-labelledby="h-view">
+        <h2 class="eyebrow" id="h-view">Settings <span>\u00B7 this device</span></h2>
+        <ol class="rows settings">${rows}</ol>
+        <p class="settings-note">Settings are saved on this device, so the TV and your phone can be set up differently.</p>
+      </section>`;
+    },
+
     search() {
       return `<section aria-labelledby="h-view">
         <h2 class="eyebrow" id="h-view">Search <span>· ${lib.mode === 'live' ? 'Apple Podcasts directory' : 'sample shows only'}</span></h2>
@@ -620,7 +651,7 @@
     statusEl.innerHTML = parts.join('');
 
     const ep = player.ep();
-    mini.hidden = !ep || state.view === 'now' || state.view === 'login' || state.view === 'loading';
+    mini.hidden = !ep || !settings.mini || state.view === 'now' || state.view === 'login' || state.view === 'loading';
     if (mini.hidden) { mini.innerHTML = ''; return; }
     const s = showById.get(ep.showId) || { title: '' };
     mini.innerHTML = `<button class="mini" data-nav data-key="mini" data-action="open-now" aria-label="Open Now Playing: ${esc(ep.title)}">
@@ -641,7 +672,7 @@
     let text;
     if (state.searching) text = 'Searching…';
     else if (state.searchError) text = state.searchError;
-    else if (state.query && state.results) text = state.results.length ? `${plural(state.results.length, 'result')} · press ↓ to reach them, Enter to subscribe` : 'No podcasts found. Try fewer or different words.';
+    else if (state.query && state.results) text = state.results.length ? `${plural(state.results.length, 'result')} · press ↓ to reach them, Space to subscribe` : 'No podcasts found. Try fewer or different words.';
     else text = 'Type a name and press Enter.';
     msg.textContent = text;
     list.innerHTML = (state.results || []).map(resultRow).join('');
@@ -842,6 +873,14 @@
         if (r) toggleSubscription(r);
         break;
       }
+      case 'setting': {
+        const key = el.dataset.setting;
+        settings[key] = !settings[key];
+        saveSettings();
+        osd(`${esc(SETTINGS[key].label)} \u00B7 ${settings[key] ? 'On' : 'Off'}`, 'msg');
+        render();
+        break;
+      }
       case 'unsub': {
         const feed = el.dataset.feed;
         if (!confirmStep('unsub:' + feed, () => { if (state.view === 'show') render(); })) break;
@@ -941,6 +980,7 @@
       case '2': go('podcasts', 'force'); break;
       case '3': go('recent', 'force'); break;
       case '4': go('search', 'force'); break;
+      case '5': go('settings', 'force'); break;
       case '/': go('search', 'force'); focusEl($('#q'), false); break;
       default: return;
     }
