@@ -16,7 +16,8 @@ A simple podcast player for the couch, controlled entirely from the keyboard. It
 | Screens | **Latest** (last 14 days; played episodes stay, dimmed), **Podcasts** (one tile per show, opening its episode list), **Recent** (what you played), **Search** (find and subscribe), **Now Playing** (full screen). |
 | Tiles | A `NEW` label if not started, a progress bar and "min left" if started, and `✓ PLAYED` when finished. |
 | Now Playing | Big artwork, big play/pause button, one progress bar, volume, and one "Up next" line. |
-| Mini player | A strip along the bottom of the library screens. Press `N` to open Now Playing. |
+| Mini player | A strip along the bottom of the library screens. Press `N` to open Now Playing. It can be turned off in Settings. |
+| Settings | Episode artwork in lists, and the now-playing strip, can each be turned on or off. Settings are per device, so the TV and phone can differ. |
 | Autoplay | When an episode ends, the newest episode you haven't finished starts. |
 | Resume and sync | Every episode remembers where you stopped, and that follows you between devices. |
 | Removing things | Unsubscribing needs a second press, so it can't happen by accident. |
@@ -28,9 +29,10 @@ A simple podcast player for the couch, controlled entirely from the keyboard. It
 |---|---|---|
 | Arrow keys | Move the highlight | `←` back 15s, `→` forward 30s, `↑` `↓` volume |
 | `Shift` + `←` / `→` | | back / forward 5s |
-| `Enter` / `Space` | Select | Play / pause |
+| `Space` | Open or play (`Enter` works too) | Play / pause |
 | `Esc` / `Backspace` | Back | Back to library |
 | `1` `2` `3` `4` | Latest, Podcasts, Recent, Search | |
+| `5` | Settings | |
 | `/` | Type a search | |
 | `N` | Open Now Playing | |
 | `P` | Play / pause | Play / pause |
