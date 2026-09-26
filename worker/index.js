@@ -108,7 +108,10 @@ async function search(url, env) {
   const itunes = new URL(env.SEARCH_URL || 'https://itunes.apple.com/search');
   itunes.search = new URLSearchParams({ media: 'podcast', entity: 'podcast', limit: '25', term }).toString();
   const res = await fetch(itunes, { headers: { 'user-agent': USER_AGENT }, cf: { cacheTtl: 3600, cacheEverything: true } });
-  if (!res.ok) return fail(502, 'Apple’s podcast directory did not answer. Try again in a moment.');
+  if (!res.ok) {
+    console.error('Apple search answered', res.status);
+    return fail(502, `Apple’s podcast directory did not answer (${res.status}). Try again in a moment.`);
+  }
   const data = await res.json();
   const results = (data.results || [])
     .filter(r => r.feedUrl)

@@ -68,6 +68,51 @@
     return type.includes('json') ? res.json() : res.text();
   }
 
+  // ---- Apple podcast directory search, straight from the browser ----
+
+  const APPLE_SEARCH = 'https://itunes.apple.com/search';
+
+  function appleResults(data) {
+    return (data.results || [])
+      .filter(r => r.feedUrl)
+      .map(r => ({
+        feedUrl: r.feedUrl,
+        title: r.collectionName || r.trackName || 'Untitled podcast',
+        author: r.artistName || '',
+        art: r.artworkUrl600 || r.artworkUrl100 || '',
+      }));
+  }
+
+  function appleUrl(query, extra) {
+    const params = new URLSearchParams({ media: 'podcast', entity: 'podcast', limit: '25', term: query, ...extra });
+    return APPLE_SEARCH + '?' + params.toString();
+  }
+
+  // Apple's directory also answers in "JSONP" form (a script), for browsers that block the normal request.
+  let jsonpCount = 0;
+  function appleJsonp(query) {
+    return new Promise((resolve, reject) => {
+      const name = '__couchcastSearch' + ++jsonpCount;
+      const script = document.createElement('script');
+      const done = () => { clearTimeout(timer); delete window[name]; script.remove(); };
+      const timer = setTimeout(() => { done(); reject(new Error('timeout')); }, 8000);
+      window[name] = data => { done(); resolve(data); };
+      script.onerror = () => { done(); reject(new Error('blocked')); };
+      script.src = appleUrl(query, { callback: name });
+      document.head.appendChild(script);
+    });
+  }
+
+  async function searchApple(query) {
+    try {
+      const res = await fetch(appleUrl(query));
+      if (!res.ok) throw new Error('Apple answered ' + res.status);
+      return appleResults(await res.json());
+    } catch {
+      return appleResults(await appleJsonp(query));
+    }
+  }
+
   // ---- Feed parsing ----
 
   const kid = (el, name) => {
@@ -299,7 +344,13 @@
         return this.shows.filter(s => s.title.toLowerCase().includes(q))
           .map(s => ({ feedUrl: s.feedUrl || 'demo:' + s.id, title: s.title, author: s.author, art: s.art }));
       }
-      return api('search?q=' + encodeURIComponent(query));
+      // Ask Apple from this device first. Apple limits searches per internet address, and
+      // Cloudflare's servers share addresses with many other sites, so they are often refused.
+      try {
+        return await searchApple(query);
+      } catch {
+        return api('search?q=' + encodeURIComponent(query));
+      }
     },
 
     async subscribe(result) {
