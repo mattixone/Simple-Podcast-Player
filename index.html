@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Couchcast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">COUCH<span>CAST</span></div>
+    <nav class="tabs" aria-label="Library">
+      <button class="btn tab" data-nav data-key="tab-latest" data-action="tab" data-tab="latest"><kbd>1</kbd> Latest</button>
+      <button class="btn tab" data-nav data-key="tab-podcasts" data-action="tab" data-tab="podcasts"><kbd>2</kbd> Podcasts</button>
+      <button class="btn tab" data-nav data-key="tab-recent" data-action="tab" data-tab="recent"><kbd>3</kbd> Recent</button>
+    </nav>
+    <div class="top-tools">
+      <button class="btn btn-sm" id="art-btn" data-nav data-key="art" data-action="art">Art: Colour</button>
+      <button class="btn btn-sm" data-nav data-key="keys" data-action="keys"><kbd>?</kbd> Legend</button>
+    </div>
+  </header>
+  <p class="status" id="status"></p>
+  <main class="main" id="main" tabindex="-1"></main>
+  <div class="mini-wrap" id="mini" hidden></div>
+</div>
+
+<div class="osd" id="osd" role="status" aria-live="polite"></div>
+
+<div class="overlay" id="keys" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="keys-title">
+    <h2 class="panel-title" id="keys-title">Legend</h2>
+    <div class="legend">
+      <section>
+        <h3>Browsing</h3>
+        <dl>
+          <dt><kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&rarr;</kbd><kbd>&darr;</kbd></dt><dd>Move the highlight</dd>
+          <dt><kbd>Enter</kbd> <kbd>Space</kbd></dt><dd>Select</dd>
+          <dt><kbd>Esc</kbd> <kbd>Bksp</kbd></dt><dd>Back</dd>
+          <dt><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></dt><dd>Latest, Podcasts, Recent</dd>
+          <dt><kbd>N</kbd></dt><dd>Open Now Playing</dd>
+        </dl>
+      </section>
+      <section>
+        <h3>Now Playing</h3>
+        <dl>
+          <dt><kbd>&larr;</kbd></dt><dd>Back 15 seconds</dd>
+          <dt><kbd>Shift</kbd>+<kbd>&larr;</kbd></dt><dd>Back 5 seconds</dd>
+          <dt><kbd>&rarr;</kbd></dt><dd>Forward 30 seconds</dd>
+          <dt><kbd>Shift</kbd>+<kbd>&rarr;</kbd></dt><dd>Forward 5 seconds</dd>
+          <dt><kbd>&uarr;</kbd><kbd>&darr;</kbd></dt><dd>Volume</dd>
+          <dt><kbd>Space</kbd></dt><dd>Play / pause</dd>
+          <dt><kbd>Esc</kbd></dt><dd>Back to library</dd>
+        </dl>
+      </section>
+      <section>
+        <h3>Anywhere</h3>
+        <dl>
+          <dt><kbd>P</kbd></dt><dd>Play / pause</dd>
+          <dt>Media keys</dt><dd>Play / pause and skip</dd>
+          <dt><kbd>A</kbd></dt><dd>Artwork in colour or phosphor green</dd>
+          <dt><kbd>?</kbd></dt><dd>Show this legend</dd>
+        </dl>
+      </section>
+    </div>
+    <button class="btn" id="keys-close" data-nav data-key="keys-close" data-action="keys-close"><kbd>Esc</kbd> Close</button>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
