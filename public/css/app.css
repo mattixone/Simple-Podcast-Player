@@ -1,18 +1,8 @@
 /*
  * Couchcast: green-phosphor CRT theme, matched to Couch Commander.
- * Now Playing re-tints the phosphor to the artwork's main colour (see applyTheme in app.js).
+ * Now Playing re-tints the phosphor to the artwork's main colour (theme.js sets these tokens on :root).
  * Sized in rem, and rem grows with the screen, so a 50" TV at 3 m gets big type.
  */
-
-/* Registered so the colours can fade when Now Playing re-tints the screen. */
-@property --ph { syntax: '<color>'; inherits: true; initial-value: #4dff85; }
-@property --ph-2 { syntax: '<color>'; inherits: true; initial-value: #2bd862; }
-@property --dim { syntax: '<color>'; inherits: true; initial-value: #2aa757; }
-@property --faint { syntax: '<color>'; inherits: true; initial-value: #0e3b1c; }
-@property --bg { syntax: '<color>'; inherits: true; initial-value: #020803; }
-@property --bg-lift { syntax: '<color>'; inherits: true; initial-value: #04150a; }
-@property --panel { syntax: '<color>'; inherits: true; initial-value: #041208; }
-@property --ink { syntax: '<color>'; inherits: true; initial-value: #010502; }
 
 :root {
   color-scheme: dark;
@@ -20,17 +10,17 @@
   --bg-lift: #04150a;
   --panel: #041208;
   --ph: #4dff85;        /* brightest phosphor: text, focus fill */
+  --ph-rgb: 77, 255, 133; /* the same colour, for see-through glows */
   --ph-2: #2bd862;      /* borders, secondary text */
   --dim: #2aa757;       /* tertiary text, still AA on --bg */
   --faint: #0e3b1c;     /* rules, empty tracks */
   --ink: #010502;       /* text on an inverted (lit) surface */
-  --glow: 0 0 .35em color-mix(in srgb, var(--ph) 55%, transparent);
-  --glow-box: 0 0 .7rem color-mix(in srgb, var(--ph) 28%, transparent), inset 0 0 .7rem color-mix(in srgb, var(--ph) 8%, transparent);
-  --glow-focus: 0 0 1.6rem color-mix(in srgb, var(--ph) 60%, transparent);
+  --glow: 0 0 .35em rgba(var(--ph-rgb), 0.55);
+  --glow-box: 0 0 .7rem rgba(var(--ph-rgb), 0.28), inset 0 0 .7rem rgba(var(--ph-rgb), 0.08);
+  --glow-focus: 0 0 1.6rem rgba(var(--ph-rgb), 0.6);
   --mono: "Share Tech Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --digits: "VT323", "Share Tech Mono", ui-monospace, monospace;
   font-size: clamp(16px, calc(.9vw + 8px), 28px);
-  transition: --ph .8s, --ph-2 .8s, --dim .8s, --faint .8s, --bg .8s, --bg-lift .8s, --panel .8s, --ink .8s;
 }
 
 html { height: 100%; box-sizing: border-box; }
@@ -120,6 +110,8 @@ h1, h2, h3, p { margin: 0; }
   letter-spacing: .1em;
   text-transform: uppercase;
 }
+.warn { color: var(--ph); }
+.warn::before { content: "\25B2  "; }
 .led {
   display: inline-block;
   width: .6em;
@@ -143,7 +135,11 @@ h1, h2, h3, p { margin: 0; }
 .main:focus { outline: none; }
 
 body[data-view="now"] .top,
-body[data-view="now"] .status { display: none; }
+body[data-view="now"] .status,
+body[data-view="login"] .top,
+body[data-view="login"] .status,
+body[data-view="loading"] .top,
+body[data-view="loading"] .status { display: none; }
 
 /* ---- Buttons: outlined at rest, lit (inverted) when highlighted ---- */
 
@@ -234,8 +230,8 @@ body[data-view="now"] .status { display: none; }
 .tile:focus {
   outline: none;
   border-color: var(--ph);
-  background: color-mix(in srgb, var(--ph) 6%, transparent);
-  box-shadow: 0 0 0 2px var(--bg), var(--glow-focus), inset 0 0 1.2rem color-mix(in srgb, var(--ph) 12%, transparent);
+  background: rgba(var(--ph-rgb), 0.06);
+  box-shadow: 0 0 0 2px var(--bg), var(--glow-focus), inset 0 0 1.2rem rgba(var(--ph-rgb), 0.12);
   transform: scale(1.04);
   z-index: 1;
 }
@@ -408,7 +404,7 @@ body[data-view="now"] .status { display: none; }
 .np-art .art {
   width: min(42vw, 74vh);
   border: 2px solid var(--ph-2);
-  box-shadow: 0 0 3rem color-mix(in srgb, var(--ph) 22%, transparent);
+  box-shadow: 0 0 3rem rgba(var(--ph-rgb), 0.22);
 }
 .np-info { display: flex; flex-direction: column; gap: 1.2rem; min-width: 0; }
 .np-back { align-self: flex-start; }
@@ -477,7 +473,7 @@ body[data-view="now"] .status { display: none; }
   gap: .8rem;
   padding: .3rem 1.2rem;
   background: var(--ph);
-  box-shadow: 0 0 3rem color-mix(in srgb, var(--ph) 60%, transparent);
+  box-shadow: 0 0 3rem rgba(var(--ph-rgb), 0.6);
   color: var(--ink);
   font-family: var(--digits);
   font-size: 3.2rem;
@@ -526,6 +522,94 @@ body[data-view="now"] .status { display: none; }
 .legend dd { margin: 0; color: var(--ph-2); }
 .panel > .btn { align-self: flex-start; }
 
+/* ---- Text boxes (search, password) ---- */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.field {
+  appearance: none;
+  width: 100%;
+  min-height: 3.6rem;
+  padding: .6rem 1rem;
+  border: 2px solid var(--ph-2);
+  border-radius: 0;
+  background: var(--panel);
+  box-shadow: var(--glow-box);
+  color: var(--ph);
+  caret-color: var(--ph);
+  font: inherit;
+  font-size: 1.3rem;
+  text-shadow: var(--glow);
+}
+.field::placeholder { color: var(--dim); opacity: 1; }
+.field:focus { outline: none; border-color: var(--ph); box-shadow: var(--glow-focus); }
+.field::-webkit-search-cancel-button { display: none; }
+
+/* ---- Search ---- */
+
+.search-form { max-width: 48rem; }
+.search-status { margin-block: .9rem 1rem; color: var(--ph-2); font-size: .85rem; letter-spacing: .06em; }
+.results { max-width: 64rem; }
+.row-result { grid-template-columns: 3.6rem minmax(0, 1fr) auto; }
+.row-art { width: 3.6rem; border: 1px solid var(--faint); }
+.row-sub {
+  overflow: hidden;
+  color: var(--ph-2);
+  font-size: .8rem;
+  letter-spacing: .08em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.row-action { font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; }
+.row-result.is-subbed .row-action { color: var(--ph-2); }
+.row:focus .row-sub,
+.row:focus .row-action { color: var(--ink); }
+.is-confirming { border-style: dashed; }
+
+/* ---- Empty library and the add tile ---- */
+
+.empty-state { display: flex; flex-direction: column; align-items: flex-start; gap: 1rem; padding-block: 2rem; }
+.empty-title { font-size: 1.6rem; letter-spacing: .12em; text-transform: uppercase; }
+.add-art { display: grid; place-items: center; aspect-ratio: 1; border-style: dashed; border-color: var(--dim); }
+.add-plus { font-size: 5rem; line-height: 1; color: var(--ph-2); }
+.tile-add:focus .add-plus { color: var(--ph); }
+
+/* ---- Podcast page extras ---- */
+
+.show-actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+.warn-note { margin-bottom: 1rem; color: var(--ph); font-size: .85rem; }
+.warn-note::before { content: "\25B2  "; }
+
+/* ---- Sign in ---- */
+
+.login { min-height: 100%; display: grid; place-items: center; padding-block: 2rem; }
+.login-box { width: 100%; max-width: 30rem; display: flex; flex-direction: column; gap: 1.25rem; }
+.login-brand { font-size: 2rem; letter-spacing: .3em; margin: 0; }
+.login-form { display: flex; flex-direction: column; gap: .8rem; }
+.login-label { color: var(--ph-2); font-size: .85rem; letter-spacing: .16em; text-transform: uppercase; }
+.login-form .btn { align-self: flex-start; }
+.login-msg { min-height: 1.4em; color: var(--ph); }
+.login-note { color: var(--dim); font-size: .85rem; }
+
+/* ---- Longer on-screen messages ---- */
+
+.osd.osd-msg {
+  max-width: min(40rem, calc(100vw - 32px));
+  white-space: normal;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  line-height: 1.35;
+  padding: .7rem 1.2rem;
+}
+
 /* ---- Phone and touch ---- */
 
 @media (max-width: 760px) {
@@ -543,6 +627,9 @@ body[data-view="now"] .status { display: none; }
   .row { grid-template-columns: minmax(0, 1fr) auto; }
   .row-flag:empty { display: none; }
   .row-flag { grid-column: 1 / -1; }
+  .row-result { grid-template-columns: 3rem minmax(0, 1fr); }
+  .row-result .row-action { grid-column: 2; }
+  .row-art { width: 3rem; }
   .mini { grid-template-columns: auto minmax(0, 1fr) auto; gap: .8rem; }
   .mini-state, .mini-key { display: none; }
   .mini-time { font-size: 1.2rem; }
@@ -562,5 +649,4 @@ body[data-view="now"] .status { display: none; }
   .tile, .osd { transition: none; }
   .tile:focus { transform: none; }
   .np { animation: none; }
-  :root { transition: none; }
 }
