@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#05060d">
+  <title>Vortex Hop</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #05060d; color: #dfe7ff;
+      font-family: system-ui, -apple-system, sans-serif; }
+    canvas { display: block; width: 100vw; height: 100vh; touch-action: none; cursor: crosshair; }
+    #overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(5, 6, 13, 0.7); padding: 16px; }
+    #overlay[hidden] { display: none; }
+    .card { max-width: 380px; text-align: center; line-height: 1.5; }
+    h1 { margin: 0 0 8px; font-size: 34px; letter-spacing: 0.04em; }
+    p { margin: 8px 0; color: #b8c2e6; }
+    ul { text-align: left; padding-left: 20px; color: #b8c2e6; }
+    button { margin-top: 16px; font: inherit; font-size: 18px; font-weight: 600; padding: 12px 36px;
+      border: 0; border-radius: 999px; background: #5affaa; color: #05201a; cursor: pointer; }
+    button:hover { filter: brightness(1.1); }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="overlay">
+    <div class="card">
+      <h1 id="overlay-title">Vortex Hop</h1>
+      <p id="overlay-text">Hop from tile to tile out of the whirlpool and reach the golden rim.</p>
+      <ul id="overlay-help">
+        <li><b>Tap or click</b> to jump. Tiles keep moving while you're in the air, so aim where they'll be.</li>
+        <li>Tiles crack when you land. The cracks show exactly where they'll break.</li>
+        <li>Small tiles are faster and sink sooner. Blue is slow, orange is fast.</li>
+        <li>Green rings are checkpoints. <b>R</b> restarts.</li>
+      </ul>
+      <button id="play">Play</button>
+    </div>
+  </div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
