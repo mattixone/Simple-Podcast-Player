@@ -171,6 +171,44 @@
     return { show, episodes };
   }
 
+  // ---- Audio addresses ----
+
+  // Many podcasts send their audio through a listener-counting service first, which then
+  // forwards to the real file. Browser tracker blockers (like Brave Shields) block these.
+  // Each pattern matches the counting service's part of the address; what follows is the real one.
+  const COUNTING_PREFIXES = [
+    /^(?:www\.)?podtrac\.com\/pts\/redirect\.[a-z0-9]+\//i,
+    /^dts\.podtrac\.com\/redirect\.[a-z0-9]+\//i,
+    /^(?:www\.)?chtbl\.com\/track\/[^/]+\//i,
+    /^chrt\.fm\/track\/[^/]+\//i,
+    /^pdst\.fm\/e\//i,
+    /^pdcn\.co\/e\//i,
+    /^pscrb\.fm\/rss\/p\//i,
+    /^verifi\.podscribe\.com\/rss\/p\//i,
+    /^op3\.dev\/e(?:,[^/]*)?\//i,
+    /^arttrk\.com\/p\/[^/]+\//i,
+    /^mgln\.ai\/e\/[^/]+\//i,
+    /^claritaspod\.com\/measure\//i,
+    /^prfx\.byspotify\.com\/e\//i,
+    /^pfx\.vpixl\.com\/[^/]+\//i,
+    /^tracking\.swap\.fm\/track\/[^/]+\//i,
+    /^media\.blubrry\.com\/[^/]+\//i,
+  ];
+
+  // The real file's address with any counting services removed, or the address unchanged.
+  function withoutCounting(url) {
+    let rest = url.replace(/^https?:\/\//i, '');
+    let stripped = false;
+    for (let i = 0; i < 8; i++) {
+      const prefix = COUNTING_PREFIXES.find(re => re.test(rest));
+      if (!prefix) break;
+      rest = rest.replace(prefix, '').replace(/^https?:\/\//i, '');
+      stripped = true;
+    }
+    if (!stripped || !/^[a-z0-9.-]+\.[a-z]{2,}(?::\d+)?\//i.test(rest)) return url;
+    return 'https://' + rest;
+  }
+
   // ---- The library object ----
 
   const lib = {
@@ -194,6 +232,16 @@
     isBusy: () => false, // replaced by the app: true while audio is playing
     onChange(fn) { this.listeners.add(fn); },
     emit(what) { this.listeners.forEach(fn => fn(what)); },
+
+    // Addresses to try for an episode's audio, in order. If one fails (blocked, down, or an
+    // insecure http link), the player moves on to the next.
+    audioSources(url) {
+      const list = [url];
+      const direct = withoutCounting(url);
+      if (direct !== url) list.push(direct);
+      if (this.mode === 'live' && /^https?:/i.test(url)) list.push('api/audio?url=' + encodeURIComponent(url));
+      return list;
+    },
 
     // Artwork in live mode goes through our server so its colours can be read.
     art(url) {
@@ -447,5 +495,6 @@
     isRecent(ep, days) { return Date.now() - ep.date <= days * DAY; },
   };
 
+  lib.withoutCounting = withoutCounting;
   C.library = lib;
 })();

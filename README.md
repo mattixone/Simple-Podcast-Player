@@ -45,12 +45,13 @@ In the search box, letters type as normal. `↓` moves to the results, and `Esc`
 
 ## How it fits together
 
-- **The page** (`public/`) is plain HTML, CSS and JavaScript, with no build step. It plays audio straight from each podcast's own website.
+- **The page** (`public/`) is plain HTML, CSS and JavaScript, with no build step. It plays audio straight from each podcast's own website. If an episode won't load, it tries again without any listener-counting service in the address (which tracker blockers like Brave Shields block), and finally through the Couchcast server.
 - **The server** (`worker/index.js`) is a Cloudflare Worker. Its jobs:
   - It checks your password.
   - It searches Apple's podcast directory.
   - It fetches feeds, because most block web pages from reading them directly.
   - It passes artwork through, so its colours can be read.
+  - It passes audio through, as a last resort for episodes the browser can't play directly.
   - It stores your subscriptions and progress in a Durable Object.
 
 ## Files
