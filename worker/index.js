@@ -6,6 +6,7 @@
  * - /api/search  looks up podcasts in Apple's public directory.
  * - /api/feed    fetches a podcast feed for the app (feeds block web pages from reading them directly).
  * - /api/img     passes artwork through, so the app can read its colours for Now Playing.
+ * - /api/audio   passes an episode's audio through, as a last resort when the browser can't play it directly.
  * - /api/sync    keeps listening progress the same on every device.
  * - /api/subs    adds and removes subscriptions.
  *
@@ -150,6 +151,38 @@ async function passThrough(url, { accept, cacheSeconds, check, contentType }) {
   });
 }
 
+// Last resort for episodes the browser can't play directly: blocked by a tracker blocker,
+// an insecure http:// link, or a host that refuses browsers. Streams the file, with seeking.
+async function audioPassThrough(request, url) {
+  const target = webAddress(url.searchParams.get('url'));
+  if (!target) return fail(400, 'That address is not a web address.');
+  const headers = { 'user-agent': USER_AGENT, accept: 'audio/*, video/*;q=0.9, */*;q=0.5' };
+  const range = request.headers.get('range');
+  if (range) headers.range = range;
+  let res;
+  try {
+    res = await fetch(target, { headers, redirect: 'follow' });
+  } catch {
+    return fail(502, 'The podcast\u2019s audio server could not be reached.');
+  }
+  if (!res.ok) return fail(502, `The podcast\u2019s audio server answered with an error (${res.status}).`);
+  const type = res.headers.get('content-type') || '';
+  if (!/^(audio|video)\//i.test(type) && !/octet-stream/i.test(type)) {
+    return fail(415, 'That address did not return an audio file.');
+  }
+  const out = new Headers({
+    'x-couchcast': '1',
+    'content-type': type,
+    'accept-ranges': 'bytes',
+    'cache-control': 'private, max-age=3600',
+  });
+  for (const h of ['content-length', 'content-range']) {
+    const v = res.headers.get(h);
+    if (v) out.set(h, v);
+  }
+  return new Response(res.body, { status: res.status, headers: out });
+}
+
 async function api(request, env, url) {
   const route = url.pathname.slice('/api/'.length);
   const method = request.method;
@@ -188,6 +221,8 @@ async function api(request, env, url) {
       contentType: 'application/xml; charset=utf-8',
     });
   }
+
+  if (route === 'audio' && method === 'GET') return audioPassThrough(request, url);
 
   if (route === 'img' && method === 'GET') {
     return passThrough(url, {

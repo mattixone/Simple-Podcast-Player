@@ -158,6 +158,17 @@
 
   let audio = null;
   let loadedId = null;
+  let sources = [];       // addresses to try for the loaded episode
+  let sourceIndex = 0;
+  let wantPlay = false;   // the listener pressed play (and hasn't paused)
+
+  // Failures are handled by the audio 'error' event, which tries the next address.
+  function startAudio() {
+    const started = audio.play();
+    if (started && started.catch) {
+      started.catch(err => { if (err && err.name === 'NotAllowedError') osd(`${PLAY} Press play`); });
+    }
+  }
   let pendingSeek = null;
   let lastPositionState = 0;
 
@@ -171,7 +182,9 @@
       if (!ep || loadedId === ep.id) return;
       loadedId = ep.id;
       pendingSeek = lib.progress[ep.id]?.done ? 0 : this.pos();
-      audio.src = ep.url;
+      sources = lib.audioSources(ep.url);
+      sourceIndex = 0;
+      audio.src = sources[0];
       audio.volume = state.volume;
       setMediaSession(ep);
     },
@@ -188,15 +201,10 @@
       if (!this.ep()) return;
       this.prepare();
       lib.setCurrent(lib.current);
-      const started = audio.play();
-      if (started && started.catch) {
-        started.catch(err => {
-          if (err && err.name === 'NotAllowedError') osd(`${PLAY} Press play`);
-          else if (err && err.name !== 'AbortError') notify('This episode will not play. The podcast’s website may be down.');
-        });
-      }
+      wantPlay = true;
+      startAudio();
     },
-    pause() { if (audio) audio.pause(); },
+    pause() { wantPlay = false; if (audio) audio.pause(); },
     toggle() {
       if (!this.ep()) { osd('Nothing playing'); return; }
       if (audio.paused || loadedId !== lib.current) this.play(); else this.pause();
@@ -269,10 +277,19 @@
     });
     audio.addEventListener('ended', () => player.finish());
     audio.addEventListener('error', () => {
-      if (!loadedId) return;
+      if (!loadedId || !audio.src) return;
+      // Try the next address for this episode, from the same position.
+      if (sourceIndex < sources.length - 1) {
+        sourceIndex++;
+        pendingSeek = lib.progress[loadedId]?.pos || 0;
+        audio.src = sources[sourceIndex];
+        if (wantPlay) startAudio();
+        return;
+      }
       state.playing = false;
+      wantPlay = false;
       updatePlayUI();
-      notify('This episode will not play. The podcast’s website may be down.');
+      notify('This episode will not play. Its audio file could not be reached, even through the Couchcast server.');
     });
   }
 
