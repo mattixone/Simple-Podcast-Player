@@ -552,14 +552,16 @@
             <h2 class="show-title">${esc(s.title)}</h2>
             <p class="show-author">${esc(s.author)}</p>
             ${s.blurb ? `<p class="show-blurb">${esc(s.blurb)}</p>` : ''}
+          </div>
+        </aside>
+        <section aria-labelledby="h-view">
+          <div class="episodes-head">
+            <h2 class="eyebrow" id="h-view">Episodes <span>· ${eps.length}</span></h2>
             <div class="show-actions">
               <button class="btn btn-sm" data-nav data-key="back" data-action="back"><kbd>Esc</kbd> All podcasts</button>
               ${lib.mode === 'live' ? `<button class="btn btn-sm${confirming ? ' is-confirming' : ''}" data-nav data-key="unsub" data-action="unsub" data-feed="${esc(s.feedUrl)}">${confirming ? 'Press again to unsubscribe' : 'Unsubscribe'}</button>` : ''}
             </div>
           </div>
-        </aside>
-        <section aria-labelledby="h-view">
-          <h2 class="eyebrow" id="h-view">Episodes <span>· ${eps.length}</span></h2>
           ${error ? `<p class="warn-note">This feed did not update: ${esc(error)}</p>` : ''}
           <ol class="rows">${eps.map(row).join('')}</ol>
         </section>
@@ -799,6 +801,12 @@
     const list = $$('[data-nav]', scope).filter(isVisible);
     const cur = document.activeElement;
     if (!list.includes(cur)) { focusEl(defaultFocus()); return; }
+    // The strip is the bottom of the screen: only Up leaves it (episodes scrolled out of view sit "below" it).
+    if (mini.contains(cur)) {
+      if (dir !== 'up') return;
+      const back = lastInMain && main.contains(lastInMain) && isVisible(lastInMain) ? lastInMain : null;
+      if (back) { focusEl(back); return; }
+    }
     const a = cur.getBoundingClientRect();
     const acx = a.left + a.width / 2, acy = a.top + a.height / 2;
     let best = null, bestScore = Infinity;
@@ -806,15 +814,21 @@
       if (el === cur) continue;
       const b = el.getBoundingClientRect();
       const bcx = b.left + b.width / 2, bcy = b.top + b.height / 2;
-      let primary, cross;
-      if (dir === 'right') { primary = b.left - a.right; cross = Math.abs(bcy - acy); }
-      else if (dir === 'left') { primary = a.left - b.right; cross = Math.abs(bcy - acy); }
-      else if (dir === 'down') { primary = b.top - a.bottom; cross = Math.abs(bcx - acx); }
-      else { primary = a.top - b.bottom; cross = Math.abs(bcx - acx); }
+      // primary: distance in the pressed direction. gap: how far it sits off to the side
+      // (0 when directly in line). Things directly in line win, then the nearest.
+      const gapX = Math.max(0, Math.max(a.left, b.left) - Math.min(a.right, b.right));
+      const gapY = Math.max(0, Math.max(a.top, b.top) - Math.min(a.bottom, b.bottom));
+      let primary, gap, centre;
+      if (dir === 'right') { primary = b.left - a.right; gap = gapY; centre = Math.abs(bcy - acy); }
+      else if (dir === 'left') { primary = a.left - b.right; gap = gapY; centre = Math.abs(bcy - acy); }
+      else if (dir === 'down') { primary = b.top - a.bottom; gap = gapX; centre = Math.abs(bcx - acx); }
+      else { primary = a.top - b.bottom; gap = gapX; centre = Math.abs(bcx - acx); }
       if (primary < -2) continue;
-      const score = Math.max(0, primary) + cross * 2;
+      const score = Math.max(0, primary) + gap * 2 + centre * 0.05;
       if (score < bestScore) { bestScore = score; best = el; }
     }
+    // While the page is still scrolling, the strip can appear level with the last row; Down still reaches it.
+    if (!best && dir === 'down' && main.contains(cur)) best = mini.querySelector('[data-nav]');
     if (best) focusEl(best);
   }
 
@@ -1049,8 +1063,10 @@
   });
 
   // Remember where the highlight was in each view, so Back returns to the same tile.
+  let lastInMain = null; // so Up from the bottom strip returns to the same tile
   document.addEventListener('focusin', e => {
     const t = e.target;
+    if (main.contains(t)) lastInMain = t;
     if (t.dataset && t.dataset.key && state.view !== 'now' && (main.contains(t) || mini.contains(t))) {
       state.memory[viewKey()] = t.dataset.key;
     }

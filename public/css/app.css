@@ -588,6 +588,8 @@ body[data-view="loading"] .status { display: none; }
 
 /* ---- Podcast page extras ---- */
 
+.episodes-head { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; margin-bottom: 1.25rem; }
+.episodes-head .eyebrow { flex: 1; min-width: 12rem; margin-bottom: 0; }
 .show-actions { display: flex; flex-wrap: wrap; gap: .6rem; }
 .warn-note { margin-bottom: 1rem; color: var(--ph); font-size: .85rem; }
 .warn-note::before { content: "\25B2  "; }
